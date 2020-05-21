@@ -13,7 +13,7 @@ s = time.time()
 can_collect = False
 
 collect_threashold = 2
-collect_time_to_wait = 1 # seconds
+collect_time_to_wait = 2 # seconds
 collect_count = 0
 collect_last_time = time.time()
 make_batch_countdown = 0
@@ -72,11 +72,6 @@ def got_data(data, dp):
         else: 
             make_batch_countdown += 1
         print("Batch: ", len(dp.batches))
-        # pass
-        # print("Got EMG: ", data_points, dp.emg_signal)
-        # # dp.make_batch()
-        # print("Batch: ", len(dp.batches), len(dp.batches[0]), len(dp.batches[0][0]), len(dp.batches[0][1]))
-        # print("Batch e: ", dp.batches[-1])
     # добавить первый (старт) и последний (стоп) фреймы
 
     # make_batch
@@ -93,9 +88,26 @@ def got_data(data, dp):
 
 dp = DataProcessing(100)
 
+
+async def send_data(data, connected):
+    try:
+        # Implement logic here.
+        print("Sending: ", data)
+        await asyncio.wait([ws.send(data) for ws in connected])
+        print("Sent")
+    finally:
+        pass
+
+connected = set()
+
 async def listener(websocket, path):
     print("Starting to listen websocket")
+    # ws_web = websocket
+    connected.add(websocket)
     async for message in websocket:
+        if "ping_test" in message:
+            print("ping: ")
+            await send_data("Hello!", connected)
         if message == "start_collect":
             start_collect()
         elif message == "end_collect":
@@ -116,7 +128,7 @@ async def listener(websocket, path):
             print("Done fitting")
         else:
             print("Unknown message: ", message)
-        # await websocket.send(message)
+            # flag = False
 
 asyncio.get_event_loop().run_until_complete(
     websockets.serve(listener, 'localhost', 8765))

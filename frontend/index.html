@@ -42,7 +42,15 @@ limitations under the License.
     height: auto;
     position: absolute;
     ">
-  </video>
+    </video>
+  </div>
+  <div>
+    <h2>Прошло секунд сбора данных</h2>
+    <h1 id="seconds-count">
+      0 sec.
+    </h1>
+    <h2>Осталось до следующей 2-ой секунды</h2>
+    <progress value="0" max="20" id="progressBar"></progress>
   </div>
   <div id="scatter-gl-container"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>

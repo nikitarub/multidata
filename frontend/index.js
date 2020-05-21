@@ -53,19 +53,23 @@ const mobile = isMobile();
 // to avoid crowding limited screen space.
 const renderPointcloud = mobile === false;
 
+var collecting = false;
+
 const state = {
     state: 'Ожидание',
     start_collect: function () {
         console.log("start_collect");
+        collecting = true;
         socket.send("start_collect");
     },
     end_collect: function () {
         console.log("end_collect");
+        collecting = false;
         socket.send("end_collect");
     },
     save_collected: function () {
         console.log("save_collected");
-        socket.send("save_collected");
+        socket.send("save_collected" + " " + state.dataset_filename);
         // update("Saved");
     },
     dataset_filename: 'dataset.csv',
@@ -106,7 +110,7 @@ function setupDatGui() {
     f_data_collect.add(state, 'start_collect');
     f_data_collect.add(state, 'end_collect');
     f_data_collect.add(state, 'save_collected');
-    // f_data_collect.add(state, 'dataset_filename');
+    f_data_collect.add(state, 'dataset_filename');
     f_data_collect.open();
 
     f_fit.add(state, 'fit');
@@ -253,41 +257,66 @@ const landmarksRealTime = async (video) => {
   const ANCHOR_POINTS = [[0, 0, 0], [0, -VIDEO_HEIGHT, 0],
   [-VIDEO_WIDTH, 0, 0], [-VIDEO_WIDTH, -VIDEO_HEIGHT, 0]];
 
+  var timer_prev = -1;
+  var timer_cnt = 0;
+  var time_counter = 0;
+  var start_time = Date.now();
+
   async function frameLandmarks() {
-    
     stats.begin();
+    if (collecting){
+      var current_time = Date.now();
+      timer_cnt  = Math.floor((current_time - start_time) / 100);
+      console.log(timer_cnt, timer_prev);
+      
+      if (timer_cnt > timer_prev){
+        document.getElementById("progressBar").value = timer_cnt;
+        timer_prev = timer_cnt;
+      }
+      if (timer_cnt >= 20){
+        timer_prev = -1;
+        timer_cnt = 0;
+        start_time = Date.now();
+        time_counter += 2;
+        console.log("+ 1 sec");
+        document.getElementById("seconds-count").innerText = time_counter + " sec.";
+      }
+    }
+    
     ctx.drawImage(video, 0, 0, videoWidth, videoHeight, 0, 0, canvas.width, canvas.height);
-    const predictions = await model.estimateHands(video);
-    if (predictions.length > 0) {
-      const result = predictions[0].landmarks;
-      console.log("predictions: ", predictions);
-      console.log("result: ", result);
-      drawKeypoints(ctx, result, predictions[0].annotations);
-      socket.send("dk" + result);
+    if (collecting){
+      const predictions = await model.estimateHands(video);
+      if (predictions.length > 0) {
+        const result = predictions[0].landmarks;
+        console.log("predictions: ", predictions);
+        console.log("result: ", result);
+        drawKeypoints(ctx, result, predictions[0].annotations);
+        socket.send("dk" + result);
 
-      if (renderPointcloud === true && scatterGL != null) {
-        const pointsData = result.map(point => {
-          return [-point[0], -point[1], -point[2]];
-        });
-        // console.log(pointsData)
-        const dataset = new ScatterGL.Dataset([...pointsData, ...ANCHOR_POINTS]);
-
-        if (!scatterGLHasInitialized) {
-          scatterGL.render(dataset);
-
-          const fingers = Object.keys(fingerLookupIndices);
-
-          scatterGL.setSequences(fingers.map(finger => ({ indices: fingerLookupIndices[finger] })));
-          scatterGL.setPointColorer((index) => {
-            if (index < pointsData.length) {
-              return 'steelblue';
-            }
-            return 'white'; // Hide.
+        if (renderPointcloud === true && scatterGL != null) {
+          const pointsData = result.map(point => {
+            return [-point[0], -point[1], -point[2]];
           });
-        } else {
-          scatterGL.updateDataset(dataset);
+          // console.log(pointsData)
+          const dataset = new ScatterGL.Dataset([...pointsData, ...ANCHOR_POINTS]);
+
+          if (!scatterGLHasInitialized) {
+            scatterGL.render(dataset);
+
+            const fingers = Object.keys(fingerLookupIndices);
+
+            scatterGL.setSequences(fingers.map(finger => ({ indices: fingerLookupIndices[finger] })));
+            scatterGL.setPointColorer((index) => {
+              if (index < pointsData.length) {
+                return 'steelblue';
+              }
+              return 'white'; // Hide.
+            });
+          } else {
+            scatterGL.updateDataset(dataset);
+          }
+          scatterGLHasInitialized = true;
         }
-        scatterGLHasInitialized = true;
       }
     }
     stats.end();
