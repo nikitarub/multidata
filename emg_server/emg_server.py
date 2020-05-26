@@ -3,10 +3,13 @@ import websockets
 import time
 from get_serial import read_for_sec_to_array
 
+flag_connected = False
+
 async def send_emg():
     uri = "ws://localhost:8765"
     async with websockets.connect(uri) as websocket:
         while True:
+            # print("Connected")
             signal = read_for_sec_to_array(0.1)
             sa = str(signal).replace('[', '').replace(']', '').replace(' ', '') 
             # print(len(sa))
@@ -23,9 +26,16 @@ async def send_emg():
         # await websocket.recv()
 
 
+def start_emg_server():
+    try:
+        asyncio.get_event_loop().run_until_complete(send_emg())
+    except:
+        print("Reconnecting...")
+        time.sleep(1)
+        start_emg_server()
 
-asyncio.get_event_loop().run_until_complete(send_emg())
-
+# asyncio.get_event_loop().run_until_complete(send_emg())
+start_emg_server()
 
 async def hello_2():
     uri = "ws://localhost:8765"

@@ -72,7 +72,7 @@ const state = {
         socket.send("save_collected" + " " + state.dataset_filename);
         // update("Saved");
     },
-    dataset_filename: 'dataset.csv',
+    dataset_filename: 'dataset',
     fit: function () {
         console.log("fit");
         socket.send("fit");

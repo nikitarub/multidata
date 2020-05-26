@@ -13,10 +13,13 @@ s = time.time()
 can_collect = False
 
 collect_threashold = 2
-collect_time_to_wait = 2 # seconds
+collect_time_to_wait = 0.3 # seconds
 collect_count = 0
 collect_last_time = time.time()
 make_batch_countdown = 0
+batch_counter = 0
+max_batch_per_backup = 25
+backup_count = 0
 
 def start_collect():
     print("Starting collector")
@@ -29,9 +32,9 @@ def end_collect():
     global can_collect
     can_collect = False
 
-def save_collected(dp):
+def save_collected(dp, dataset_name):
     # dp.write
-    dp.write_to_file()
+    dp.write_to_file(dataset_name)
     print("Saving data")
 
 def fit():
@@ -51,6 +54,8 @@ def got_data(data, dp):
     global collect_count
     global collect_last_time
     global make_batch_countdown
+    global batch_counter
+    global backup_count
     if not can_collect:
         return
     if collect_count < collect_threashold:
@@ -69,8 +74,14 @@ def got_data(data, dp):
         if make_batch_countdown == 3:
             dp.make_batch()
             make_batch_countdown = 0
+            batch_counter += 1
         else: 
             make_batch_countdown += 1
+        if batch_counter == max_batch_per_backup:
+            print("Backuping:", backup_count)
+            backup_count += 1
+            dp.write_to_file("backup_dataset_" + str(backup_count))
+            batch_counter = 0
         print("Batch: ", len(dp.batches))
     # добавить первый (старт) и последний (стоп) фреймы
 
@@ -121,7 +132,8 @@ async def listener(websocket, path):
         elif message == "save_model":
             save_model()
         elif "save_collected" in message:
-            save_collected(dp)
+            dataset_name = message.split(" ")[1]
+            save_collected(dp, dataset_name)
         elif message[0] == "d":
             got_data(message, dp)
         elif message == "fitted":

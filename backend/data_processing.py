@@ -69,12 +69,12 @@ class DataProcessing:
         self.keypoints = []
         self.emg_signal = []
 
-    def write_to_file(self):
+    def write_to_file(self, dataset_name):
         emg_signal_anotations = ["e" + str(i) for i in range(self.emg_signal_length)]
         full_keypoints_anotations = list(np.array([[anot + "_x", anot + "_y", anot + "_z"] for anot in self.anotations]).flatten())
         to_df = self.batches
         print("len to_df: ", len(to_df), len(to_df[0]))
         print("len anot_: ", len(full_keypoints_anotations + emg_signal_anotations))
         df = pd.DataFrame(to_df ,columns=full_keypoints_anotations + emg_signal_anotations)
-        df.to_csv("dataset_3.csv")
-        print("Dataset saved")
+        df.to_csv("./tmp_data/" + dataset_name + ".csv")
+        print("Dataset saved: ", "./tmp_data/" + dataset_name + ".csv")
