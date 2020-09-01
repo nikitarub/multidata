@@ -236,24 +236,26 @@ if __name__ == '__main__':
     #   get bend data
     # create dataset
     # write data
-    df = pd.read_csv("tmp_data/dataset_2.csv")
+    df = pd.read_csv("tmp_data/dataset.csv")
     palmBase_x,palmBase_y, thumb_x,thumb_y, indexFinger_x,indexFinger_y, middleFinger_x,middleFinger_y, ringFinger_x,ringFinger_y, pinky_x,pinky_y = get_hand_data(df)
     dist_base_index = get_dist_base_index(palmBase_x, palmBase_y, ringFinger_x, ringFinger_y)
     signals = collect_signals(df)
     bend_base_index = is_bend(dist_base_index)
     signal_full, lables_full = concat_signals_lables_ground(signals, dist_base_index)
     _, lables_bend_full, lables_bend_base_full = concat_signals_lables(signals, bend_base_index)
-    create_dataset_image(signal_full, lables_bend_full, "../datasets/binary_regression/ds_backup_5/pics/dataset_graph", 0, 50000)
+    create_dataset_image(signal_full, lables_bend_full, "./dataset_graph", 0, 50000)
     bend_index, not_bend_index = get_bend_not_bend_index_lables(lables_bend_full, 10)
 
     bend_indexes = get_bend_indexes_lables(lables_bend_base_full, 10)
     
     signal_bend_batches = create_bend_batches(signal_full, bend_index)
-    save_batches_fig(signal_bend_batches, "../datasets/binary_regression/ds_backup_5/pics/batches_bend.png")
+    save_batches_fig(signal_bend_batches, "./batches_bend.png")
     signal_not_bend_batches = create_bend_batches(signal_full, not_bend_index)
-    save_batches_fig(signal_not_bend_batches, "../datasets/binary_regression/ds_backup_5/pics/batches_not_bend.png")
+    # ./datasets/binary_regression/ds_backup_5/
+    save_batches_fig(signal_not_bend_batches, "./batches_not_bend.png")
 
     
     res_df = create_ternary_dataset(signal_full[:50000], bend_indexes[:50000], 200)
     # print(res_df.describe())
-    res_df.to_csv("../datasets/binary_regression/ds_backup_5/dataset.csv")
+    res_df.to_csv("./dataset_post.csv")
+    # res_df.to_csv("../datasets/binary_regression/ds_backup_5/dataset.csv")
